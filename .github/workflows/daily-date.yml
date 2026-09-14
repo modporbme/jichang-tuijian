@@ -27,7 +27,7 @@ jobs:
           now = datetime.now(ZoneInfo("Asia/Shanghai"))
           full = f"{now.year}年{now.month}月{now.day}日"
 
-          path = next((Path(n) for n in ("readme.md", "README.md") if Path(n).exists()), None)
+          path = next((Path(n) for n in ("readme.md") if Path(n).exists()), None)
           if path is None:
               raise SystemExit("readme.md / README.md not found")
 
@@ -42,7 +42,7 @@ jobs:
         run: |
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add readme.md README.md
+          git add readme.md 
           if git diff --staged --quiet; then
             echo "No changes"
           else
