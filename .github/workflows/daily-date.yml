@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Update README dates
+      - name: Update readme dates
         run: |
           python3 - << 'PY'
           from pathlib import Path
@@ -25,7 +25,7 @@ jobs:
           now = datetime.now(ZoneInfo("Asia/Shanghai"))
           full = f"{now.year}年{now.month}月{now.day}日"  # 2026年9月15日
 
-          p = Path("README.md")
+          p = Path("readme.md")
           text = p.read_text(encoding="utf-8")
 
           # 标题：# 机场推荐(2026年9月15日更新)
@@ -52,10 +52,10 @@ jobs:
         run: |
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add README.md
+          git add readme.md
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "chore: 更新 README 日期"
+            git commit -m "chore: 更新 readme 日期"
             git push
           fi
