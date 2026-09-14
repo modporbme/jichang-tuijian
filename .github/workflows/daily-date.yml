@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Update readme dates
+      - name: Update dates in readme.md
         run: |
           python3 - << 'PY'
           from pathlib import Path
@@ -22,37 +22,27 @@ jobs:
           from zoneinfo import ZoneInfo
           import re
 
+          full = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y年%-m月%-d日")
+          # strftime %-m 在部分环境不可用，改用手动拼接
           now = datetime.now(ZoneInfo("Asia/Shanghai"))
-          full = f"{now.year}年{now.month}月{now.day}日"  # 2026年9月15日
+          full = f"{now.year}年{now.month}月{now.day}日"
 
-          p = Path("readme.md")
-          text = p.read_text(encoding="utf-8")
+          path = next((Path(n) for n in ("readme.md", "README.md") if Path(n).exists()), None)
+          if path is None:
+              raise SystemExit("readme.md / README.md not found")
 
-          # 标题：# 机场推荐(2026年9月15日更新)
-          text = re.sub(
-              r"#\s*机场推荐\([^)]*\)",
-              f"# 机场推荐({full}更新)",
-              text,
-              count=1,
-          )
-
-          # 正文：最近可用状态更新于：2026年9月15日
-          text = re.sub(
-              r"最近可用状态更新于：[^\n]*",
-              f"最近可用状态更新于：{full}",
-              text,
-              count=1,
-          )
-
-          p.write_text(text, encoding="utf-8")
-          print("written:", full)
+          text = path.read_text(encoding="utf-8")
+          text = re.sub(r"^\d{4}年\d{1,2}月\d{1,2}日更新", f"{full}更新", text, count=1, flags=re.M)
+          text = re.sub(r"(一切正常，)\d{4}年\d{1,2}月\d{1,2}日", rf"\g<1>{full}", text, count=1)
+          path.write_text(text, encoding="utf-8")
+          print(path, "->", full)
           PY
 
       - name: Commit and push
         run: |
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add readme.md
+          git add readme.md README.md
           if git diff --staged --quiet; then
             echo "No changes"
           else
