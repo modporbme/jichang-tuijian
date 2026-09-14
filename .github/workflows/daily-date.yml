@@ -16,33 +16,48 @@ jobs:
 
       - name: Update dates in readme.md
         run: |
-          python3 - << 'PY'
-          from pathlib import Path
+          python3 << 'PY'
           from datetime import datetime
           from zoneinfo import ZoneInfo
-          import re
+          import os, re
 
-          full = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y年%-m月%-d日")
-          # strftime %-m 在部分环境不可用，改用手动拼接
+          target = "readme.md"
+          if not os.path.isfile(target):
+              print("cwd:", os.getcwd())
+              print("files:", os.listdir("."))
+              raise SystemExit(f"{target} is not a file")
+
           now = datetime.now(ZoneInfo("Asia/Shanghai"))
           full = f"{now.year}年{now.month}月{now.day}日"
 
-          path = next((Path(n) for n in ("readme.md") if Path(n).exists()), None)
-          if path is None:
-              raise SystemExit("readme.md / README.md not found")
+          with open(target, "r", encoding="utf-8") as f:
+              text = f.read()
 
-          text = path.read_text(encoding="utf-8")
-          text = re.sub(r"^\d{4}年\d{1,2}月\d{1,2}日更新", f"{full}更新", text, count=1, flags=re.M)
-          text = re.sub(r"(一切正常，)\d{4}年\d{1,2}月\d{1,2}日", rf"\g<1>{full}", text, count=1)
-          path.write_text(text, encoding="utf-8")
-          print(path, "->", full)
+          text2 = re.sub(
+              r"^\d{4}年\d{1,2}月\d{1,2}日更新",
+              f"{full}更新",
+              text,
+              count=1,
+              flags=re.M,
+          )
+          text2 = re.sub(
+              r"(一切正常，)\d{4}年\d{1,2}月\d{1,2}日",
+              r"\g<1>" + full,
+              text2,
+              count=1,
+          )
+
+          with open(target, "w", encoding="utf-8") as f:
+              f.write(text2)
+
+          print("ok:", full)
           PY
 
       - name: Commit and push
         run: |
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add readme.md 
+          git add readme.md
           if git diff --staged --quiet; then
             echo "No changes"
           else
