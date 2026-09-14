@@ -1,0 +1,53 @@
+name: Daily Date Update
+
+on:
+  schedule:
+    - cron: "22 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-date:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update README dates
+        env:
+          TITLE: ""
+          FULL: ""
+        run: |
+          export TITLE="$(TZ='Asia/Shanghai' date +'%Y年%-m月更新')"
+          export FULL="$(TZ='Asia/Shanghai' date +'%Y年%-m月%-d日')"
+          python3 - << 'PY'
+          from pathlib import Path
+          import os, re
+          title = os.environ["TITLE"]
+          full = os.environ["FULL"]
+          p = Path("README.md")
+          text = p.read_text(encoding="utf-8")
+          text2 = re.sub(
+              r"(#\s*机场推荐\()\d{4}年\d{1,2}月更新(\))",
+              rf"\1{title}\2",
+              text,
+              count=1,
+          )
+          text2 = re.sub(
+              r"(最近可用状态更新于：)\d{4}年\d{1,2}月\d{1,2}日",
+              rf"\1{full}",
+              text2,
+              count=1,
+          )
+          p.write_text(text2, encoding="utf-8")
+          print(title, full)
+          PY
+
+      - name: Commit and push
+        run: |
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add README.md
+          git diff --staged --quiet || git commit -m "chore: 更新 README 日期"
+          git diff HEAD @{u} --quiet || git push
