@@ -15,39 +15,47 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Update README dates
-        env:
-          TITLE: ""
-          FULL: ""
         run: |
-          export TITLE="$(TZ='Asia/Shanghai' date +'%Y年%-m月更新')"
-          export FULL="$(TZ='Asia/Shanghai' date +'%Y年%-m月%-d日')"
           python3 - << 'PY'
           from pathlib import Path
-          import os, re
-          title = os.environ["TITLE"]
-          full = os.environ["FULL"]
-          p = Path("readme.md")
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          import re
+
+          now = datetime.now(ZoneInfo("Asia/Shanghai"))
+          full = f"{now.year}年{now.month}月{now.day}日"  # 2026年9月15日
+
+          p = Path("README.md")
           text = p.read_text(encoding="utf-8")
-          text2 = re.sub(
-              r"(#\s*机场推荐\()\d{4}年\d{1,2}月更新(\))",
-              rf"\1{title}\2",
+
+          # 标题：# 机场推荐(2026年9月15日更新)
+          text = re.sub(
+              r"#\s*机场推荐\([^)]*\)",
+              f"# 机场推荐({full}更新)",
               text,
               count=1,
           )
-          text2 = re.sub(
-              r"(最近可用状态更新于：)\d{4}年\d{1,2}月\d{1,2}日",
-              rf"\1{full}",
-              text2,
+
+          # 正文：最近可用状态更新于：2026年9月15日
+          text = re.sub(
+              r"最近可用状态更新于：[^\n]*",
+              f"最近可用状态更新于：{full}",
+              text,
               count=1,
           )
-          p.write_text(text2, encoding="utf-8")
-          print(title, full)
+
+          p.write_text(text, encoding="utf-8")
+          print("written:", full)
           PY
 
       - name: Commit and push
         run: |
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add readme.md
-          git diff --staged --quiet || git commit -m "chore: 更新 README 日期"
-          git diff HEAD @{u} --quiet || git push
+          git add README.md
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "chore: 更新 README 日期"
+            git push
+          fi
